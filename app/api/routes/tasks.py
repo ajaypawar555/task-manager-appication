@@ -5,7 +5,6 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
-from supabase import Client
 
 from app.core.config import get_settings
 from app.db.supabase import get_supabase_client
@@ -31,8 +30,16 @@ def require_api_token(authorization: Annotated[str | None, Header()] = None) -> 
         )
 
 
-def get_task_service(client: Annotated[Client, Depends(get_supabase_client)]) -> TaskService:
-    return TaskService(TaskRepository(client))
+def get_task_service() -> TaskService:
+    """Build the task service and turn configuration/client errors into a safe 503."""
+    try:
+        return TaskService(TaskRepository(get_supabase_client()))
+    except Exception as exc:
+        logger.exception("Could not initialize task database client")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Task storage is temporarily unavailable",
+        ) from exc
 
 
 ServiceDep = Annotated[TaskService, Depends(get_task_service)]

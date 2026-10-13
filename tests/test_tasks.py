@@ -145,6 +145,24 @@ def test_database_failure_is_sanitized(client: TestClient, fake_service: FakeSer
     assert "private database detail" not in response.text
 
 
+def test_supabase_client_initialization_failure_is_sanitized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_client() -> Any:
+        raise RuntimeError("private Supabase configuration detail")
+
+    monkeypatch.setattr(task_routes, "get_supabase_client", fail_client)
+    app.dependency_overrides.clear()
+    app.dependency_overrides[require_api_token] = lambda: None
+
+    response = TestClient(app).get("/api/v1/tasks")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Task storage is temporarily unavailable"}
+    assert "private Supabase configuration detail" not in response.text
+    app.dependency_overrides.clear()
+
+
 def test_task_routes_require_token_when_not_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(task_routes, "get_settings", lambda: Settings(api_auth_enabled=True))
     app.dependency_overrides.clear()
