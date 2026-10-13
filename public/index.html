@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10141d" />
+    <title>Task Manager</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #10141d;
+        color: #edf1f7;
+        font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 20% 0%, #1e2939 0, #10141d 52%); }
+      button, input, select, textarea { font: inherit; }
+      button { cursor: pointer; }
+      .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; padding: 34px 0 50px; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+      .eyebrow { color: #86d7c1; font-size: 12px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+      h1 { margin: 8px 0 6px; font-size: clamp(30px, 5vw, 42px); letter-spacing: -.04em; }
+      .subtitle { margin: 0; color: #9ba8bb; }
+      .connection { display: flex; align-items: end; gap: 9px; padding: 12px; border: 1px solid #303949; border-radius: 14px; background: #171e29; }
+      .connection label { display: grid; gap: 5px; color: #aeb9c9; font-size: 12px; }
+      input, select, textarea { width: 100%; color: #edf1f7; border: 1px solid #384356; border-radius: 9px; background: #111722; padding: 10px 11px; outline: none; }
+      input:focus, select:focus, textarea:focus { border-color: #71cbb1; box-shadow: 0 0 0 3px #71cbb122; }
+      .token { width: 210px; }
+      .button { border: 0; border-radius: 9px; padding: 10px 14px; color: #071611; font-weight: 750; background: #86d7c1; }
+      .button:hover { background: #a0ecd6; }
+      .button.secondary { color: #e7edf5; background: #293344; }
+      .button.secondary:hover { background: #354256; }
+      .button.danger { color: #ffe8e7; background: #612e34; }
+      .button.danger:hover { background: #77363e; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(310px, .8fr); gap: 18px; align-items: start; }
+      .panel { border: 1px solid #303949; border-radius: 16px; background: #171e29ee; box-shadow: 0 15px 40px #0002; }
+      .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px 18px 13px; }
+      h2 { margin: 0; font-size: 17px; }
+      .count { color: #9ba8bb; font-size: 13px; }
+      .filters { display: grid; grid-template-columns: 1fr 1fr 1.3fr auto; gap: 8px; padding: 0 18px 14px; }
+      .task-list { display: grid; gap: 9px; padding: 0 12px 14px; }
+      .task { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 14px; border: 1px solid #2f3948; border-radius: 12px; background: #1d2633; }
+      .task.selected { border-color: #76ceb6; box-shadow: inset 0 0 0 1px #76ceb644; }
+      .task-title { margin: 0 0 6px; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+      .task-description { margin: 0; color: #aab5c5; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+      .pill { display: inline-flex; padding: 4px 8px; border-radius: 99px; color: #cbd5e3; background: #303b4b; font-size: 11px; }
+      .pill.high { color: #ffbcb4; background: #542f36; }
+      .pill.completed { color: #a9e7d4; background: #25463e; }
+      .task-actions { display: flex; flex-direction: column; gap: 7px; }
+      .small-button { padding: 7px 10px; border: 1px solid #3b485a; border-radius: 8px; color: #e6edf5; background: #242e3c; }
+      .small-button:hover { border-color: #77ceb6; }
+      .empty { padding: 38px 18px; color: #9ba8bb; text-align: center; }
+      form { display: grid; gap: 13px; padding: 18px; }
+      .field { display: grid; gap: 6px; }
+      .field label { color: #aeb9c9; font-size: 12px; font-weight: 650; }
+      textarea { min-height: 92px; resize: vertical; }
+      .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .form-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 2px; }
+      #notice { min-height: 22px; margin-top: 13px; color: #aab5c5; font-size: 13px; }
+      #notice.error { color: #ffaaa4; }
+      .footnote { margin: 16px 0 0; color: #7f8ca0; font-size: 12px; }
+      @media (max-width: 860px) { header { flex-direction: column; } .connection { width: 100%; } .connection label:first-child { flex: 1; } .layout { grid-template-columns: 1fr; } }
+      @media (max-width: 560px) { .shell { width: min(100% - 22px, 1180px); padding-top: 24px; } .connection { align-items: stretch; flex-direction: column; } .token { width: 100%; } .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .filters button { grid-column: 1 / -1; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <div class="eyebrow">Task Manager</div>
+          <h1>Make room for what matters.</h1>
+          <p class="subtitle">A simple workspace for your tasks, priorities, and due dates.</p>
+        </div>
+        <div class="connection">
+          <label>API base URL<input id="apiBase" value="" placeholder="Same site by default" autocomplete="url" /></label>
+          <label>API access token<input id="token" class="token" type="password" placeholder="Needed when API auth is enabled" autocomplete="off" /></label>
+          <button id="connect" class="button" type="button">Connect</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <section class="panel" aria-label="Task list">
+          <div class="panel-head"><h2>Your tasks</h2><span id="count" class="count">Loading…</span></div>
+          <div class="filters">
+            <select id="filterStatus" aria-label="Filter by status"><option value="">All statuses</option><option>pending</option><option>in_progress</option><option>completed</option></select>
+            <select id="filterPriority" aria-label="Filter by priority"><option value="">All priorities</option><option>low</option><option>medium</option><option>high</option></select>
+            <input id="search" type="search" placeholder="Search titles" aria-label="Search task titles" />
+            <button id="applyFilters" class="button secondary" type="button">Filter</button>
+          </div>
+          <div id="tasks" class="task-list"><div class="empty">Loading tasks…</div></div>
+        </section>
+
+        <section class="panel" aria-label="Task editor">
+          <div class="panel-head"><h2 id="formHeading">Create a task</h2></div>
+          <form id="taskForm">
+            <div class="field"><label for="title">Title *</label><input id="title" maxlength="200" required placeholder="What needs to get done?" /></div>
+            <div class="field"><label for="description">Description</label><textarea id="description" maxlength="5000" placeholder="Add a few details (optional)"></textarea></div>
+            <div class="two">
+              <div class="field"><label for="status">Status</label><select id="status"><option>pending</option><option>in_progress</option><option>completed</option></select></div>
+              <div class="field"><label for="priority">Priority</label><select id="priority"><option>low</option><option selected>medium</option><option>high</option></select></div>
+            </div>
+            <div class="field"><label for="dueDate">Due date and time (optional)</label><input id="dueDate" type="datetime-local" /></div>
+            <div class="form-actions">
+              <button id="save" class="button" type="submit">Create task</button>
+              <button id="clear" class="button secondary" type="button">Clear</button>
+            </div>
+          </form>
+        </section>
+      </div>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <p class="footnote">Your API token stays in this browser tab and is sent only to this API. Never enter your Supabase secret key here.</p>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let selectedId = null;
+      let lastTasks = [];
+
+      function apiUrl(path) {
+        const base = $("apiBase").value.trim().replace(/\/+$/, "");
+        return `${base}${path}`;
+      }
+
+      async function api(path, options = {}) {
+        const headers = { Accept: "application/json", ...(options.headers || {}) };
+        const token = $("token").value.trim();
+        if (token) headers.Authorization = `Bearer ${token}`;
+        if (options.body) headers["Content-Type"] = "application/json";
+        const response = await fetch(apiUrl(path), { ...options, headers });
+        if (response.status === 204) return null;
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          const detail = data?.detail;
+          throw new Error(typeof detail === "string" ? detail : `Request failed (${response.status})`);
+        }
+        return data;
+      }
+
+      function setNotice(message, isError = false) {
+        $("notice").textContent = message;
+        $("notice").classList.toggle("error", isError);
+      }
+
+      function formatDate(value) {
+        if (!value) return "No due date";
+        const date = new Date(value);
+        return Number.isNaN(date.valueOf()) ? value : date.toLocaleString();
+      }
+
+      function renderTasks(tasks) {
+        lastTasks = tasks;
+        $("count").textContent = `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
+        const list = $("tasks");
+        list.replaceChildren();
+        if (!tasks.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No tasks match. Create one to get started.";
+          list.append(empty);
+          return;
+        }
+        for (const task of tasks) {
+          const card = document.createElement("article");
+          card.className = `task${selectedId === task.id ? " selected" : ""}`;
+          const content = document.createElement("div");
+          const title = document.createElement("h3");
+          title.className = "task-title";
+          title.textContent = task.title;
+          content.append(title);
+          if (task.description) {
+            const description = document.createElement("p");
+            description.className = "task-description";
+            description.textContent = task.description;
+            content.append(description);
+          }
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          const status = document.createElement("span");
+          status.className = `pill${task.status === "completed" ? " completed" : ""}`;
+          status.textContent = task.status.replace("_", " ");
+          const priority = document.createElement("span");
+          priority.className = `pill${task.priority === "high" ? " high" : ""}`;
+          priority.textContent = `${task.priority} priority`;
+          const dueDate = document.createElement("span");
+          dueDate.className = "pill";
+          dueDate.textContent = formatDate(task.due_date);
+          meta.append(status, priority, dueDate);
+          content.append(meta);
+          const actions = document.createElement("div");
+          actions.className = "task-actions";
+          const edit = document.createElement("button");
+          edit.className = "small-button";
+          edit.type = "button";
+          edit.textContent = "Edit";
+          edit.addEventListener("click", () => selectTask(task.id));
+          const remove = document.createElement("button");
+          remove.className = "small-button";
+          remove.type = "button";
+          remove.textContent = "Delete";
+          remove.addEventListener("click", () => deleteTask(task.id));
+          actions.append(edit, remove);
+          card.append(content, actions);
+          list.append(card);
+        }
+      }
+
+      async function loadTasks() {
+        setNotice("Loading tasks…");
+        const params = new URLSearchParams({ limit: "100", offset: "0" });
+        if ($("filterStatus").value) params.set("status", $("filterStatus").value);
+        if ($("filterPriority").value) params.set("priority", $("filterPriority").value);
+        if ($("search").value.trim()) params.set("search", $("search").value.trim());
+        try {
+          renderTasks(await api(`/api/v1/tasks?${params}`));
+          setNotice("Connected to the Task Manager API.");
+        } catch (error) {
+          $("count").textContent = "Not connected";
+          $("tasks").innerHTML = '<div class="empty">Connect to the API to load tasks.</div>';
+          setNotice(`${error.message}. Check the API URL and token.`, true);
+        }
+      }
+
+      async function selectTask(id) {
+        try {
+          const task = await api(`/api/v1/tasks/${id}`);
+          selectedId = task.id;
+          $("title").value = task.title;
+          $("description").value = task.description || "";
+          $("status").value = task.status;
+          $("priority").value = task.priority;
+          $("dueDate").value = task.due_date ? new Date(task.due_date).toISOString().slice(0, 16) : "";
+          $("formHeading").textContent = `Edit task #${task.id}`;
+          $("save").textContent = "Save changes";
+          renderTasks(lastTasks);
+          setNotice(`Editing task ${task.id}.`);
+        } catch (error) {
+          setNotice(error.message, true);
+        }
+      }
+
+      function taskPayload() {
+        const dueValue = $("dueDate").value;
+        return {
+          title: $("title").value.trim(),
+          description: $("description").value.trim() || null,
+          status: $("status").value,
+          priority: $("priority").value,
+          due_date: dueValue ? new Date(dueValue).toISOString() : null,
+        };
+      }
+
+      $("taskForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const method = selectedId ? "PATCH" : "POST";
+        const path = selectedId ? `/api/v1/tasks/${selectedId}` : "/api/v1/tasks";
+        try {
+          const task = await api(path, { method, body: JSON.stringify(taskPayload()) });
+          setNotice(selectedId ? `Updated task ${task.id}.` : `Created task ${task.id}.`);
+          clearForm();
+          await loadTasks();
+        } catch (error) {
+          setNotice(error.message, true);
+        }
+      });
+
+      async function deleteTask(id) {
+        if (!window.confirm(`Delete task ${id}? This cannot be undone.`)) return;
+        try {
+          await api(`/api/v1/tasks/${id}`, { method: "DELETE" });
+          if (selectedId === id) clearForm();
+          setNotice(`Deleted task ${id}.`);
+          await loadTasks();
+        } catch (error) {
+          setNotice(error.message, true);
+        }
+      }
+
+      function clearForm() {
+        selectedId = null;
+        $("taskForm").reset();
+        $("status").value = "pending";
+        $("priority").value = "medium";
+        $("formHeading").textContent = "Create a task";
+        $("save").textContent = "Create task";
+        renderTasks(lastTasks);
+      }
+
+      $("connect").addEventListener("click", loadTasks);
+      $("applyFilters").addEventListener("click", loadTasks);
+      $("search").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") loadTasks();
+      });
+      $("clear").addEventListener("click", clearForm);
+      loadTasks();
+    </script>
+  </body>
+</html>
