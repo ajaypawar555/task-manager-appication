@@ -124,7 +124,16 @@
       async function api(path, options = {}) {
         const headers = { Accept: "application/json", ...(options.headers || {}) };
         if (options.body) headers["Content-Type"] = "application/json";
-        const response = await fetch(apiUrl(path), { ...options, headers });
+        const targetUrl = apiUrl(path);
+        let response;
+        try {
+          response = await fetch(targetUrl, { ...options, headers });
+        } catch (error) {
+          const reason = error instanceof TypeError
+            ? "The browser could not reach this API (network, URL, or cross-origin issue)"
+            : error.message;
+          throw new Error(`${reason}: ${targetUrl}`);
+        }
         if (response.status === 204) return null;
         const data = await response.json().catch(() => null);
         if (!response.ok) {

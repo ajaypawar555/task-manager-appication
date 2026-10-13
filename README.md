@@ -104,7 +104,7 @@ See [API.md](API.md) for the HTTP endpoint reference and Postman instructions.
 
 ## Deploy the browser UI to Vercel
 
-The Tkinter desktop window (`ui.py`) cannot run in a browser. The browser interface is `public/index.html`; FastAPI serves it at `/` and serves the task API from the same origin. Vercel's Python runtime supports FastAPI apps and its FastAPI integration can serve static frontend files. See the [Vercel FastAPI guide](https://vercel.com/docs/frameworks/backend/fastapi).
+The Tkinter desktop window (`ui.py`) cannot run in a browser. The browser interface is `public/index.html`; FastAPI serves it at `/` and serves the task API from the same origin. Runtime dependencies are declared in both `pyproject.toml` and `requirements.txt` so Vercel installs FastAPI and the Supabase SDK. See the [Vercel FastAPI guide](https://vercel.com/docs/frameworks/backend/fastapi).
 
 Push this project to a Git provider supported by Vercel, then import the repository as a new Vercel project. Add these environment variables in the Vercel project settings for each deployment environment:
 
@@ -166,6 +166,7 @@ ruff format --check .
 
 - **`503 Task storage is temporarily unavailable`**: confirm the migration ran, `SUPABASE_URL` and `SUPABASE_KEY` are correct, and the key is the server-side secret. Restart Uvicorn after editing `.env`.
 - **`401 Invalid or missing API token`**: this only applies when `API_AUTH_ENABLED=true`; set it to `false` for the public demo, or include the configured bearer token.
+- **Browser says `Failed to fetch`**: leave the browser UI's API base URL blank so it calls the API on the same Vercel domain. Open `/health` and `/api/v1/tasks` directly on that domain; inspect Vercel runtime logs if either endpoint cannot be reached.
 - **Relation/table not found**: run the migration in the intended Supabase project's SQL Editor.
 - **Permission denied**: confirm the server key maps to the granted `service_role`; do not grant the `anon` role open table access as a shortcut.
 - **Import errors**: activate the virtual environment and run `pip install -r requirements.txt`.
