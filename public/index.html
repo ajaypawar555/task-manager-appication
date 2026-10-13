@@ -26,7 +26,6 @@
       .connection label { display: grid; gap: 5px; color: #aeb9c9; font-size: 12px; }
       input, select, textarea { width: 100%; color: #edf1f7; border: 1px solid #384356; border-radius: 9px; background: #111722; padding: 10px 11px; outline: none; }
       input:focus, select:focus, textarea:focus { border-color: #71cbb1; box-shadow: 0 0 0 3px #71cbb122; }
-      .token { width: 210px; }
       .button { border: 0; border-radius: 9px; padding: 10px 14px; color: #071611; font-weight: 750; background: #86d7c1; }
       .button:hover { background: #a0ecd6; }
       .button.secondary { color: #e7edf5; background: #293344; }
@@ -62,7 +61,7 @@
       #notice.error { color: #ffaaa4; }
       .footnote { margin: 16px 0 0; color: #7f8ca0; font-size: 12px; }
       @media (max-width: 860px) { header { flex-direction: column; } .connection { width: 100%; } .connection label:first-child { flex: 1; } .layout { grid-template-columns: 1fr; } }
-      @media (max-width: 560px) { .shell { width: min(100% - 22px, 1180px); padding-top: 24px; } .connection { align-items: stretch; flex-direction: column; } .token { width: 100%; } .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .filters button { grid-column: 1 / -1; } }
+      @media (max-width: 560px) { .shell { width: min(100% - 22px, 1180px); padding-top: 24px; } .connection { align-items: stretch; flex-direction: column; } .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .filters button { grid-column: 1 / -1; } }
     </style>
   </head>
   <body>
@@ -75,7 +74,6 @@
         </div>
         <div class="connection">
           <label>API base URL<input id="apiBase" value="" placeholder="Same site by default" autocomplete="url" /></label>
-          <label>API access token<input id="token" class="token" type="password" placeholder="Needed when API auth is enabled" autocomplete="off" /></label>
           <button id="connect" class="button" type="button">Connect</button>
         </div>
       </header>
@@ -110,7 +108,7 @@
         </section>
       </div>
       <div id="notice" role="status" aria-live="polite"></div>
-      <p class="footnote">Your API token stays in this browser tab and is sent only to this API. Never enter your Supabase secret key here.</p>
+      <p class="footnote">This public demo lets anyone with the URL view and change tasks. Never enter your Supabase secret key here.</p>
     </main>
 
     <script>
@@ -125,8 +123,6 @@
 
       async function api(path, options = {}) {
         const headers = { Accept: "application/json", ...(options.headers || {}) };
-        const token = $("token").value.trim();
-        if (token) headers.Authorization = `Bearer ${token}`;
         if (options.body) headers["Content-Type"] = "application/json";
         const response = await fetch(apiUrl(path), { ...options, headers });
         if (response.status === 204) return null;
@@ -218,7 +214,7 @@
         } catch (error) {
           $("count").textContent = "Not connected";
           $("tasks").innerHTML = '<div class="empty">Connect to the API to load tasks.</div>';
-          setNotice(`${error.message}. Check the API URL and token.`, true);
+          setNotice(`${error.message}. Check the API URL and server configuration.`, true);
         }
       }
 

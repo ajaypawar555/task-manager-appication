@@ -174,3 +174,7 @@ def test_task_routes_require_token_when_not_overridden(monkeypatch: pytest.Monke
 def test_auth_can_be_disabled_for_local_testing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(task_routes, "get_settings", lambda: Settings(api_auth_enabled=False))
     assert require_api_token() is None
+
+
+def test_auth_is_disabled_by_default() -> None:
+    assert Settings().api_auth_enabled is False

@@ -6,7 +6,7 @@ See [API.md](API.md) for the endpoint reference, request examples, Postman steps
 
 ## Architecture
 
-- `app/api/routes`: HTTP endpoints, input/query validation, authentication, and safe database error responses.
+- `app/api/routes`: HTTP endpoints, input/query validation, optional authentication, and safe database error responses.
 - `app/services`: application use cases and not-found behavior.
 - `app/repositories`: Supabase/PostgREST queries, including filters and pagination.
 - `app/schemas`: Pydantic request and response validation.
@@ -15,7 +15,7 @@ See [API.md](API.md) for the endpoint reference, request examples, Postman steps
 - `migrations`: SQL schema and indexes to run in Supabase.
 - `tests`: mocked HTTP-level tests; they do not connect to Supabase.
 
-This first version is a **single shared task space**. Task endpoints require an `Authorization: Bearer <API_ACCESS_TOKEN>` token by default. `API_AUTH_ENABLED=false` disables that check for isolated local testing only. The Supabase key stays on the server. The shared token is not per-user identity or authorization. Add Supabase Auth, owner IDs, owner-scoped queries, and RLS policies before exposing a multi-user service.
+This first version is a **public, single shared task space** with authentication disabled by default. Anyone with the app URL can view, create, update, and delete tasks. The Supabase key stays on the server. To enable the optional shared bearer token, set `API_AUTH_ENABLED=true` and configure `API_ACCESS_TOKEN`. A shared token is not per-user identity or authorization; add Supabase Auth, owner IDs, owner-scoped queries, and RLS policies before using this as a multi-user service.
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ This first version is a **single shared task space**. Task endpoints require an 
 2. Paste and run [`migrations/001_create_tasks.sql`](migrations/001_create_tasks.sql).
 3. In the project API settings, copy the project URL and a server-side Supabase secret key (not the publishable key). Do not put this key in frontend code, screenshots, source control, or this chat. Older projects may call the equivalent key `service_role`; treat it as an elevated secret and rotate it if it leaks.
 
-The migration creates the `tasks` table, enum-like check constraints, timestamp trigger, and indexes. It enables RLS and revokes table access from `anon` and `authenticated`; only the backend's `service_role` database role is granted access. Supabase server secret keys bypass RLS, so the API's bearer token gate and server-side handling of that key are essential. The current shared token does not provide user-level permissions. Never remove the API token check to make requests work. The later multi-user phase must use user identity and ownership policies rather than a shared global token.
+The migration creates the `tasks` table, enum-like check constraints, timestamp trigger, and indexes. It enables RLS and revokes table access from `anon` and `authenticated`; only the backend's `service_role` database role is granted access. Supabase server secret keys bypass RLS, so this public API can read and modify every task in the shared table. Never expose the Supabase key. The later multi-user phase should use user identity and ownership policies rather than a shared global token.
 
 ## Set up locally
 
@@ -60,13 +60,12 @@ Edit `.env` locally:
 ```dotenv
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-server-side-secret-key
-API_ACCESS_TOKEN=your-long-random-local-token
-API_AUTH_ENABLED=true
+API_AUTH_ENABLED=false
 ```
 
-For temporary testing on your own computer only, set `API_AUTH_ENABLED=false` in `.env` and restart Uvicorn. Do not deploy with this setting, and do not bind the server to `0.0.0.0`; the development server should remain on its default `127.0.0.1` address. Set it back to `true` after testing.
+The API is public with this setting. To enable optional bearer-token protection, set `API_AUTH_ENABLED=true` and add `API_ACCESS_TOKEN` to `.env`.
 
-Generate a random API token locally, for example:
+If you enable optional bearer-token protection, generate a random token locally, for example:
 
 ```powershell
 # PowerShell
@@ -99,7 +98,7 @@ The project includes a simple Tkinter desktop client. It uses Python's standard 
 .\.venv\Scripts\python.exe ui.py
 ```
 
-Keep the API base URL as `http://127.0.0.1:8000`. When `API_AUTH_ENABLED=false` for local testing, leave the token field blank. When authentication is enabled, paste your API access token in the token field. The UI lets you list, filter, search, create, select, update, and delete tasks.
+Keep the API base URL as `http://127.0.0.1:8000`. The UI lets you list, filter, search, create, select, update, and delete tasks without a token when authentication is disabled.
 
 See [API.md](API.md) for the HTTP endpoint reference and Postman instructions.
 
@@ -113,14 +112,14 @@ Push this project to a Git provider supported by Vercel, then import the reposit
 |---|---|
 | `SUPABASE_URL` | Your Supabase project URL. |
 | `SUPABASE_KEY` | A server-side Supabase secret key, never a publishable key. |
-| `API_AUTH_ENABLED` | `true` |
-| `API_ACCESS_TOKEN` | A long random token you will enter into the browser UI. |
+| `API_AUTH_ENABLED` | `false` for a public demo. Set `true` only when you also configure a token. |
+| `API_ACCESS_TOKEN` | Optional; only required when `API_AUTH_ENABLED=true`. |
 
-Keep the Supabase secret in Vercel's server-side environment settings. Do not put it in `public/index.html`, browser JavaScript, or a `NEXT_PUBLIC_` variable. Keep `API_AUTH_ENABLED=true` on Vercel; the local `.env` setting that disables authentication is only for localhost testing. The app currently uses one shared API token instead of per-user sign-in, so only give the deployed URL and token to trusted testers.
+Keep the Supabase secret in Vercel's server-side environment settings. Do not put it in `public/index.html`, browser JavaScript, or a `NEXT_PUBLIC_` variable. For this public demo, set `API_AUTH_ENABLED=false` in Vercel. Anyone who finds the deployed URL can change or delete every task in the shared table.
 
-After setting the variables, deploy the Vercel project. Open the deployment root URL to use the browser UI. Enter the `API_ACCESS_TOKEN` in its token field; the UI sends it with API requests. The API is also available at `/api/v1/tasks`, and Swagger UI at `/docs`. The Vercel entrypoint is configured in `pyproject.toml`; no separate UI build step is needed.
+After setting the variables, deploy the Vercel project. Open the deployment root URL to use the browser UI. The API is also available at `/api/v1/tasks`, and Swagger UI at `/docs`. The Vercel entrypoint is configured in `pyproject.toml`; no separate UI build step is needed.
 
-In Swagger UI, expand a task endpoint and fill its `authorization` header parameter with `Bearer <your API_ACCESS_TOKEN>`, then try the request. For example:
+In Swagger UI, task endpoints work without an authorization header when `API_AUTH_ENABLED=false`. If you enable authentication, fill its `authorization` header parameter with `Bearer <your API_ACCESS_TOKEN>`. For example:
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/tasks `
@@ -160,13 +159,13 @@ ruff format --check .
 - `GET /api/v1/tasks` and `GET /api/v1/tasks/{task_id}`: `200 OK`.
 - `PATCH /api/v1/tasks/{task_id}`: `200 OK`; at least one field is required.
 - `DELETE /api/v1/tasks/{task_id}`: `204 No Content`.
-- Invalid data: FastAPI/Pydantic `422`; missing task: `404`; absent/invalid bearer token: `401`.
+- Invalid data: FastAPI/Pydantic `422`; missing task: `404`; absent/invalid bearer token: `401` when optional authentication is enabled.
 - Supabase failures: generic `503` response; exception details are logged server-side, not returned.
 
 ## Troubleshooting
 
 - **`503 Task storage is temporarily unavailable`**: confirm the migration ran, `SUPABASE_URL` and `SUPABASE_KEY` are correct, and the key is the server-side secret. Restart Uvicorn after editing `.env`.
-- **`401 Invalid or missing API token`**: include `Authorization: Bearer <API_ACCESS_TOKEN>` and confirm there are no extra spaces or stale server settings.
+- **`401 Invalid or missing API token`**: this only applies when `API_AUTH_ENABLED=true`; set it to `false` for the public demo, or include the configured bearer token.
 - **Relation/table not found**: run the migration in the intended Supabase project's SQL Editor.
 - **Permission denied**: confirm the server key maps to the granted `service_role`; do not grant the `anon` role open table access as a shortcut.
 - **Import errors**: activate the virtual environment and run `pip install -r requirements.txt`.
@@ -174,4 +173,4 @@ ruff format --check .
 
 ## Security and next phase
 
-Keep `.env` and the Supabase secret key private, use HTTPS outside local development, store deployment secrets in a secret manager, and rotate credentials if exposed. The shared API token is not a replacement for accounts or per-user authorization. The next phase should integrate Supabase Auth, add a `user_id` foreign key, scope every repository query by authenticated user, and write/test RLS policies that prevent cross-user reads and writes. Task IDs by themselves are never authorization.
+Keep `.env` and the Supabase secret key private, use HTTPS outside local development, store deployment secrets in a secret manager, and rotate credentials if exposed. This public demo allows anyone with its URL to read and change all tasks. Before using it with private or multi-user data, integrate Supabase Auth, add a `user_id` foreign key, scope every repository query by authenticated user, and write/test RLS policies that prevent cross-user reads and writes. Task IDs by themselves are never authorization.

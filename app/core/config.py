@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """Settings loaded from environment variables and an optional .env file."""
 
     app_name: str = "Task Manager API"
-    api_auth_enabled: bool = True
+    api_auth_enabled: bool = False
     supabase_url: str = ""
     supabase_key: SecretStr = Field(default=SecretStr(""))
     api_access_token: SecretStr = Field(default=SecretStr(""))

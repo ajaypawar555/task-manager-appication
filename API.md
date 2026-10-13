@@ -6,13 +6,13 @@ Interactive OpenAPI documentation is available at [`/docs`](http://127.0.0.1:800
 
 ## Authentication
 
-Every `/api/v1/tasks` endpoint checks the bearer token when `API_AUTH_ENABLED=true` (the default):
+Every `/api/v1/tasks` endpoint checks the bearer token when `API_AUTH_ENABLED=true`. Authentication is disabled by default for this public demo:
 
 ```http
 Authorization: Bearer <API_ACCESS_TOKEN>
 ```
 
-In Postman, choose **Authorization → Bearer Token** and paste the token value without the `Bearer` prefix. For isolated local testing, `API_AUTH_ENABLED=false` disables this check; restart Uvicorn after changing `.env`. Do not deploy or expose the API with authentication disabled. `GET /health` does not require a token.
+In Postman, choose **Authorization → Bearer Token** and paste the token value without the `Bearer` prefix when authentication is enabled. For the public demo, set `API_AUTH_ENABLED=false` and omit the token. Anyone with access to the API URL can view, create, update, and delete all shared tasks. `GET /health` does not require a token.
 
 The API requires a working Supabase URL and server-side secret key for task operations. The SQL migration must be applied to the same Supabase project. The publishable key does not have the table permissions used by this app.
 
@@ -142,7 +142,7 @@ Returns `204 No Content` on success (no response body), or `404 Not Found` if th
 
 Start the API, then from a second terminal run `python ui.py` (or `.\.venv\Scripts\python.exe ui.py` in PowerShell). Enter the local base URL, and enter a bearer token only when `API_AUTH_ENABLED=true`. The desktop client supports task listing, filters, title search, create, update, and delete.
 
-The browser UI is served from the same FastAPI app at `/`. It can be hosted with the API on Vercel; configure `SUPABASE_URL`, `SUPABASE_KEY`, `API_ACCESS_TOKEN`, and `API_AUTH_ENABLED=true` in Vercel's environment settings. See the Vercel deployment section in the README. The browser receives only the API token entered by its user, never the Supabase key.
+The browser UI is served from the same FastAPI app at `/`. It can be hosted with the API on Vercel; configure `SUPABASE_URL` and `SUPABASE_KEY` in Vercel's environment settings. Set `API_AUTH_ENABLED=false` for this public demo. See the Vercel deployment section in the README. The Supabase key is server-only and must never be sent to the browser.
 
 ## Troubleshooting
 
