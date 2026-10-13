@@ -1,5 +1,7 @@
 """FastAPI application entry point."""
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -16,5 +18,8 @@ def health() -> dict[str, str]:
 
 app.include_router(tasks_router)
 
-# Serve the browser UI at /; API and documentation routes are registered above it.
-app.mount("/", StaticFiles(directory="public", html=True), name="web")
+# Vercel serves files in `public/` from its CDN and may omit them from the Python
+# function bundle. Mount the UI for local development only when that directory exists.
+public_dir = Path(__file__).resolve().parent.parent / "public"
+if public_dir.is_dir():
+    app.mount("/", StaticFiles(directory=public_dir, html=True), name="web")
